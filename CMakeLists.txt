@@ -3,4 +3,7 @@ project(ThreadPool)
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_executable(ThreadPool demo/main.cpp)
+add_executable(ThreadPool demo/main.cpp
+        src/threadpool.h
+        src/threadpool.cpp
+)
