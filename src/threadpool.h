@@ -2,10 +2,12 @@
 
 #include <queue>
 #include <vector>
+#include <optional>
 
 #include <functional>
 #include <thread>
 #include <future>
+#include <mutex>
 
 struct task {
     task(std::function<void()> ptr);
@@ -31,6 +33,12 @@ public:
     int queue_size();
 
 private:
+    std::mutex write_tasks_mutex;
+    std::mutex read_tasks_mutex;
+
+    std::optional<task> poll_task();
+    void write_task();
+
     std::queue<task> tasks;
     std::vector<std::thread> workers;
 };

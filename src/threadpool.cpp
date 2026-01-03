@@ -1,10 +1,12 @@
 #include "threadpool.h"
 
-
+// ============ TASK ============
 
 task::task(std::function<void()> ptr) {
     m_Ptr = ptr;
 }
+
+// ============ THREADPOOL PUBLIC ============
 
 threadpool::threadpool(const int& n) {
     workers = std::vector<std::thread>(n);
@@ -27,8 +29,31 @@ void threadpool::shutdown() {
     }
 }
 
-
 [[nodiscard]]
 int threadpool::queue_size() {
     return tasks.size();
 }
+
+
+
+
+// ============ THREADPOOL PRIVATE ============
+// Todo: USE AN RAII WRAPPER OF MUTEX OTHERWISE THERE COULD BE A DEADLOCK!!
+std::optional<task> threadpool::poll_task() {
+    read_tasks_mutex.lock();
+
+    if (tasks.empty()) {
+        return std::nullopt;
+    }
+
+    task front = tasks.front();
+    tasks.pop();
+    read_tasks_mutex.unlock();
+    return front;
+}
+
+// Todo: Decide on whether to take a lambda or a std::function pointer
+void threadpool::write_task() {
+
+}
+
