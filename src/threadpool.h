@@ -104,7 +104,7 @@ struct return_value_handle {
     friend class threadpool;
 
 public:
-    return_value_handle() : m_Value{std::make_shared<return_value<T>>()} {
+    return_value_handle() : m_Handle{std::make_shared<return_value<T>>()} {
     }
 
     return_value_handle(const return_value_handle&) = default; // Copy Constructor
@@ -114,23 +114,23 @@ public:
     return_value_handle& operator=(return_value_handle&&) = default; // Move Assignment Constructor
 
     bool is_valid() const {
-        if (m_Value == nullptr)
+        if (m_Handle == nullptr)
             return false;
 
-        return m_Value -> is_valid();
+        return m_Handle -> is_valid();
     }
 
     std::atomic<T>& get() const {
-        return m_Value.get()->get();
+        return m_Handle.get()->get();
     }
 
 private:
-    std::shared_ptr<return_value<T>> m_Value;
+    std::shared_ptr<return_value<T>> m_Handle;
     void set_value(const T& value) {
-        m_Value->set_value(value);
+        m_Handle->set_value(value);
     }
     void set_valid(const bool& value) {
-        m_Value->set_valid(value);
+        m_Handle->set_valid(value);
     }
 };
 
@@ -141,7 +141,7 @@ struct return_value_handle<void> {
     friend class threadpool;
 
 public:
-    return_value_handle() : m_Value{std::make_shared<return_value<void>>()} {
+    return_value_handle() : m_Handle{std::make_shared<return_value<void>>()} {
     }
 
     return_value_handle(const return_value_handle&) = default; // Copy Constructor
@@ -151,18 +151,18 @@ public:
     return_value_handle& operator=(return_value_handle&&) = default; // Move Assignment Constructor
 
     bool is_valid() const {
-        if (m_Value == nullptr)
+        if (m_Handle == nullptr)
             return false;
 
-        return m_Value -> is_valid();
+        return m_Handle -> is_valid();
     }
 
     void get() const {
-        return m_Value.get() -> get();
+        return m_Handle.get() -> get();
     }
 
 private:
-    std::shared_ptr<return_value<void>> m_Value;
+    std::shared_ptr<return_value<void>> m_Handle;
     static void set_value() {
         // Do nothing
     }
