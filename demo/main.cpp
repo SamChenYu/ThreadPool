@@ -18,7 +18,7 @@ int main() {
 
     //all_tests();
 
-    threadpool tp(4);
+    threadpool tp(3);
 
     std::vector<return_value_handle<int>> futures = {
         tp.submit<int>( []() -> int { return recursive_fibonacci(10);} ),
@@ -27,7 +27,6 @@ int main() {
         tp.submit<int>( []() -> int { return recursive_fibonacci(40);} ),
     };
 
-    std::this_thread::sleep_for(std::chrono::seconds(1));
     tp.shutdown();
 
     for (int i=0; i<futures.size(); i++) {
@@ -38,6 +37,6 @@ int main() {
             std::cout << "Result " << i << " not available" << std::endl;
         }
     }
-    
+
     return 0;
 }

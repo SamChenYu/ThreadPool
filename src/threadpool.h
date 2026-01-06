@@ -5,6 +5,7 @@
 #include <functional>
 #include <thread>
 #include <mutex>
+#include <condition_variable>
 
 template<class T>
 struct return_value_handle;
@@ -43,7 +44,7 @@ struct return_value {
     std::atomic<T>& get() {
         std::lock_guard<std::mutex> lock(access_mutex);
         if (!is_valid()) {
-            throw std::runtime_error("Thread Return Value is Invalid!");
+            throw std::runtime_error{"Thread Return Value is Invalid!"};
         }
         return m_Value;
     }
@@ -81,7 +82,7 @@ struct return_value<void> {
 
     void get() {
         std::lock_guard<std::mutex> lock(access_mutex);
-        if (!is_valid()) throw std::runtime_error("Thread Return Value is Invalid!");
+        if (!is_valid()) throw std::runtime_error{"Thread Return Value is Invalid!"};
         // nothing to return
     }
 
@@ -183,21 +184,28 @@ private:
     std::vector<std::thread> workers;
 
     std::atomic<bool> m_IsRunning{true};
+    std::atomic<bool> m_ShuttingDown{false};
     std::mutex queue_mutex;
 
+    std::condition_variable cv;
+
+
     std::optional<task> poll_task();
-    bool write_task(const std::function<void()>& ptr) {
+    void write_task(const std::function<void()>& ptr) {
         std::lock_guard<std::mutex> lock(queue_mutex);
-        // Todo: custom logic to make sure that the queue can actually take the task
         tasks.push( task{ptr} );
-        return true;
     }
 
 public:
     threadpool(const int& threads);
+    ~threadpool();
 
     template<class T>
+    [[nodiscard]]
     return_value_handle<T> submit(const std::function<T()>& ptr) {
+
+        if (m_ShuttingDown)
+            throw std::runtime_error{"Threadpool was shut down, but new tasks were submitted!"};
 
         return_value_handle<T> rv_handle{};
 
@@ -216,7 +224,6 @@ public:
     [[nodiscard]]
     int queue_size();
 };
-
 
 // Void specialization
 template<>

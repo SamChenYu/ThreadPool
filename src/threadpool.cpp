@@ -7,7 +7,9 @@
 threadpool::threadpool(const int& n) {
     workers.reserve(n);
     for (int i=0; i<n; i++) {
-        workers[i] = std::thread([this, i]() {
+        workers[i] = std::thread([this]() {
+
+
 
             while (this->m_IsRunning) {
 
@@ -18,13 +20,20 @@ threadpool::threadpool(const int& n) {
                 }
             }
 
+
+
+
         });
     }
 }
 
-
+threadpool::~threadpool() {
+    if (!m_ShuttingDown)
+        shutdown();
+}
 
 void threadpool::shutdown() {
+    m_ShuttingDown = true;
     m_IsRunning = false;
     for (std::thread& worker : workers) {
         worker.join();
