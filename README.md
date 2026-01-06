@@ -29,3 +29,15 @@ for (int i=0; i<futures.size(); i++) {
     Result 3 102334155
  */
 ```
+
+
+``` Todo
+- Refactor std::atomic into normal bool and use one mutex
+- Refactor the std::atomic return types and reintroduced the mutex
+- Refactor the worker thread
+
+- Refactor shutdown() and shutdown_now()
+
+
+
+```

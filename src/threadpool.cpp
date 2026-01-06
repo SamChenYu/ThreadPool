@@ -10,8 +10,7 @@ threadpool::threadpool(const int& n) {
         workers[i] = std::thread([this]() {
 
 
-
-            while (this->m_IsRunning) {
+            while (!(this->m_Stop)) {
 
                 std::optional<task> opt_task = this->poll_task();
                 if (opt_task.has_value()) {
@@ -28,21 +27,22 @@ threadpool::threadpool(const int& n) {
 }
 
 threadpool::~threadpool() {
-    if (!m_ShuttingDown)
+    std::lock_guard<std::mutex> lock(queue_stop_mutex);
+    if (!(m_Stop))
         shutdown();
 }
 
 void threadpool::shutdown() {
-    m_ShuttingDown = true;
-    m_IsRunning = false;
+    std::lock_guard<std::mutex> lock(queue_stop_mutex);
+    m_Stop = true;
     for (std::thread& worker : workers) {
         worker.join();
     }
 }
 
 void threadpool::shutdown_now() {
-    std::lock_guard<std::mutex> lock(queue_mutex);
-    m_IsRunning = false;
+    std::lock_guard<std::mutex> lock(queue_stop_mutex);
+    m_Stop = true;
     while (!tasks.empty()) {
         tasks.pop(); // Clear the queue
     }
@@ -59,7 +59,7 @@ int threadpool::queue_size() {
 // ============ THREADPOOL PRIVATE ============
 
 std::optional<task> threadpool::poll_task() {
-    std::lock_guard<std::mutex> lock(queue_mutex);
+    std::lock_guard<std::mutex> lock(queue_stop_mutex);
     if (tasks.empty()) {
         return std::nullopt;
     }

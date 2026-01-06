@@ -183,16 +183,14 @@ private:
     std::queue<task> tasks;
     std::vector<std::thread> workers;
 
-    std::atomic<bool> m_IsRunning{true};
-    std::atomic<bool> m_ShuttingDown{false};
-    std::mutex queue_mutex;
-
+    bool m_Stop{false};
+    std::mutex queue_stop_mutex; // Used for queue operations and read/write m_Stop operations
     std::condition_variable cv;
 
 
     std::optional<task> poll_task();
     void write_task(const std::function<void()>& ptr) {
-        std::lock_guard<std::mutex> lock(queue_mutex);
+        std::lock_guard<std::mutex> lock(queue_stop_mutex);
         tasks.push( task{ptr} );
     }
 
@@ -203,10 +201,6 @@ public:
     template<class T>
     [[nodiscard]]
     return_value_handle<T> submit(const std::function<T()>& ptr) {
-
-        if (m_ShuttingDown)
-            throw std::runtime_error{"Threadpool was shut down, but new tasks were submitted!"};
-
         return_value_handle<T> rv_handle{};
 
         write_task(
