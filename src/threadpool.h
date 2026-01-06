@@ -18,6 +18,10 @@ struct task {
     std::function<void()> m_Ptr;
 };
 
+
+
+
+
 // Simplified implementation of std::future
 // return_value is shared state via the shared pointer, do not allow copy / move semantics
 template<class T>
@@ -77,6 +81,72 @@ public:
 private:
     std::shared_ptr<return_value<T>> m_Value;
 };
+
+
+// Specialization of void
+template<>
+struct return_value<void> {
+
+    friend class threadpool; // Allow access to mutate m_Value and m_IsValid
+
+    return_value() = default;
+
+    return_value(const return_value&) = delete; // Copy Constructor
+    return_value& operator=(const return_value&) = delete; // Copy Assignment Constructor
+
+    return_value(return_value&&) = delete; // Move Constructor
+    return_value& operator=(return_value&&) = delete; // Move Assignment Constructor
+
+    bool is_valid() const {
+        return m_IsValid;
+    }
+
+    void get() {
+        std::lock_guard<std::mutex> lock(access_mutex);
+        if (!is_valid()) throw std::runtime_error("Thread Return Value is Invalid!");
+        // nothing to return
+    }
+
+private:
+    std::mutex access_mutex;
+    std::atomic<bool> m_IsValid{false};
+};
+
+template<>
+struct return_value_handle<void> {
+public:
+    return_value_handle() : m_Value{std::make_shared<return_value<void>>()} {
+    }
+
+    return_value_handle(const return_value_handle&) = default; // Copy Constructor
+    return_value_handle& operator=(const return_value_handle&) = default; // Copy Assignment Constructor
+
+    return_value_handle(return_value_handle&&) = default; // Move Constructor
+    return_value_handle& operator=(return_value_handle&&) = default; // Move Assignment Constructor
+
+    bool is_valid() const {
+        if (m_Value == nullptr)
+            return false;
+
+        return m_Value -> is_valid();
+    }
+
+    void get() const {
+        return m_Value.get() -> get();
+    }
+
+private:
+    std::shared_ptr<return_value<void>> m_Value;
+};
+
+
+
+
+
+
+
+
+
 
 
 class threadpool {
