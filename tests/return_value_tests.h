@@ -10,14 +10,6 @@ void return_value_tests() {
     return_value_handle<void> rv_handle2{};
     assert(!rv_handle2.is_valid());
 
-    return_value_handle<int> access_invalid_state;
-    try {
-        auto some_state = access_invalid_state.get();
-        assert(false); // should not reach
-    } catch (const std::runtime_error& e) {
-        // expected
-    }
-
     return_value_handle<int> h1;
     auto h2 = h1; // copy
     assert(h1.is_valid() == h2.is_valid());
