@@ -9,6 +9,22 @@ threadpool::threadpool(const int& n) {
     for (int i=0; i<n; i++) {
         workers[i] = std::thread([this]() {
 
+            // while (true) {
+            //     std::unique_lock<std::mutex> lock(queue_stop_mutex);
+            //
+            //     this->cv.wait(lock, [this]() { return this->m_Stop;});
+            //
+            //     if (this->tasks.empty() && !(this->m_Stop) ) {
+            //         lock.unlock();
+            //         break;
+            //     }
+            //     std::optional<task> opt_task = this->poll_task();
+            //     if (opt_task.has_value()) {
+            //         auto& task = opt_task.value();
+            //         lock.unlock();
+            //         task.m_Ptr();
+            //     }
+            // }
 
             while (!(this->m_Stop)) {
 
@@ -27,9 +43,11 @@ threadpool::threadpool(const int& n) {
 }
 
 threadpool::~threadpool() {
-    std::lock_guard<std::mutex> lock(queue_stop_mutex);
-    if (!(m_Stop))
+    std::unique_lock<std::mutex> lock(queue_stop_mutex);
+    if (!(m_Stop)) {
+        lock.unlock(); // Unlock so that shutdown can use the mutex
         shutdown();
+    }
 }
 
 void threadpool::shutdown() {
@@ -52,7 +70,7 @@ void threadpool::shutdown_now() {
 }
 
 [[nodiscard]]
-int threadpool::queue_size() {
+int threadpool::queue_size() const {
     return tasks.size();
 }
 

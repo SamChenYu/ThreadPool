@@ -38,6 +38,6 @@ for (int i=0; i<futures.size(); i++) {
 
 - Refactor shutdown() and shutdown_now()
 
-
+MAY NEED TO REPLACE lock_guard with unique_lock!!! because unique_lock can unlock!
 
 ```

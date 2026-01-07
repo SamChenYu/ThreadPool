@@ -37,27 +37,35 @@ struct return_value {
     return_value(return_value&&) = delete; // Move Constructor
     return_value& operator=(return_value&&) = delete; // Move Assignment Constructor
 
-    bool is_valid() const {
+    bool is_valid() {
+        std::unique_lock<std::mutex> lock(access_mutex);
         return m_IsValid;
     }
 
-    std::atomic<T>& get() {
-        std::lock_guard<std::mutex> lock(access_mutex);
-        if (!is_valid()) {
+    T get() {
+        std::unique_lock<std::mutex> lock(access_mutex);
+        if (!is_valid_unsafe()) { // unsafe to prevent deadlock as we already acquired mutex
             throw std::runtime_error{"Thread Return Value is Invalid!"};
         }
+
         return m_Value;
     }
 
 private:
     std::mutex access_mutex;
-    std::atomic<T> m_Value;
-    std::atomic<bool> m_IsValid{false};
+    T m_Value;
+    bool m_IsValid{false};
+
+    bool is_valid_unsafe() {
+        return m_IsValid;
+    }
 
     void set_value(const T& value) {
+        std::unique_lock<std::mutex> lock(access_mutex);
         m_Value = value;
     }
     void set_valid(const bool& value) {
+        std::unique_lock<std::mutex> lock(access_mutex);
         m_IsValid = value;
     }
 };
@@ -76,23 +84,34 @@ struct return_value<void> {
     return_value(return_value&&) = delete; // Move Constructor
     return_value& operator=(return_value&&) = delete; // Move Assignment Constructor
 
-    bool is_valid() const {
+    bool is_valid() {
+        std::unique_lock<std::mutex> lock(access_mutex);
         return m_IsValid;
     }
 
     void get() {
-        std::lock_guard<std::mutex> lock(access_mutex);
-        if (!is_valid()) throw std::runtime_error{"Thread Return Value is Invalid!"};
+        std::unique_lock<std::mutex> lock(access_mutex);
+        if (!is_valid_unsafe()) {
+            lock.unlock();
+            throw std::runtime_error{"Thread Return Value is Invalid!"};
+        }
         // nothing to return
     }
 
 private:
     std::mutex access_mutex;
-    std::atomic<bool> m_IsValid{false};
-    static void set_value() {
+    bool m_IsValid{false};
+
+    bool is_valid_unsafe() {
+        return m_IsValid;
+    }
+
+    void set_value() {
+        std::unique_lock<std::mutex> lock(access_mutex);
         // Do nothing
     }
     void set_valid(const bool& value) {
+        std::unique_lock<std::mutex> lock(access_mutex);
         m_IsValid = value;
     }
 };
@@ -120,7 +139,7 @@ public:
         return m_Handle -> is_valid();
     }
 
-    std::atomic<T>& get() const {
+    T get() const {
         return m_Handle.get()->get();
     }
 
@@ -190,8 +209,9 @@ private:
 
     std::optional<task> poll_task();
     void write_task(const std::function<void()>& ptr) {
-        std::lock_guard<std::mutex> lock(queue_stop_mutex);
+        // No lock guard as submit() already contains the lock
         tasks.push( task{ptr} );
+        cv.notify_one();
     }
 
 public:
@@ -201,6 +221,12 @@ public:
     template<class T>
     [[nodiscard]]
     return_value_handle<T> submit(const std::function<T()>& ptr) {
+        std::unique_lock<std::mutex> lock(queue_stop_mutex);
+        if (m_Stop) {
+            lock.unlock();
+            throw std::runtime_error{"ThreadPool::submit() after shutdown called"};
+        }
+
         return_value_handle<T> rv_handle{};
 
         write_task(
@@ -216,12 +242,18 @@ public:
     void shutdown_now(); // cancel pending tasks
 
     [[nodiscard]]
-    int queue_size();
+    int queue_size() const;
 };
 
 // Void specialization
 template<>
 inline return_value_handle<void> threadpool::submit(const std::function<void()>& ptr) {
+
+    std::unique_lock<std::mutex> lock(queue_stop_mutex);
+    if (m_Stop) {
+        lock.unlock();
+        throw std::runtime_error{"ThreadPool::submit() after shutdown called"};
+    }
 
     return_value_handle<void> rv_handle{};
 
