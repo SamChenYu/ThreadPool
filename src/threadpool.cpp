@@ -62,7 +62,8 @@ void threadpool::shutdown_now() {
 }
 
 [[nodiscard]]
-int threadpool::queue_size() const {
+int threadpool::queue_size() {
+    std::lock_guard<std::mutex> lock(queue_stop_mutex);
     return tasks.size();
 }
 

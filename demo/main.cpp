@@ -16,12 +16,12 @@ int recursive_fibonacci(int n) {
 
 void fibonacci_example() {
 
-    threadpool tp(1);
+    threadpool tp(3);
 
     std::vector<return_value_handle<int>> futures = {
-        tp.submit<int>( []() -> int { return recursive_fibonacci(10);} ),
         tp.submit<int>( []() -> int { return recursive_fibonacci(20);} ),
         tp.submit<int>( []() -> int { return recursive_fibonacci(30);} ),
+        tp.submit<int>( []() -> int { return recursive_fibonacci(40);} ),
     };
 
     tp.shutdown();
@@ -37,10 +37,12 @@ void fibonacci_example() {
 }
 
 
+
+
+
 int main() {
 
-    all_tests();
-    //fibonacci_example();
+    fibonacci_example();
 
     return 0;
 }

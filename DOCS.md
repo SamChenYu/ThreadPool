@@ -1,4 +1,39 @@
 # Thread Pool Docs
+
+
+## API Docs
+threadpool
+``` c++
+// Constructor for n threads
+threadpool::threadpool(const int& threads);
+
+// Adding a task to the queue. Returns a handle to give return value of the function pointer.
+return_value_handle<T> threadpool::submit(const std::function<T()>& ptr);
+
+// Block the queue, join all threads (All pending tasks run).
+void threadpool::shutdown();
+
+// Block and clear the queue, join all threads (All pending tasks cleared. Current tasks on threads run.).
+void threadpool::shutdown_now();
+
+// Number of tasks awaiting in the queue. Does not count tasks in progress. 
+int threadpool::queue_size() const;
+``` 
+
+return_value_handle<T>
+```c++
+// Used to check if the thread has finished work and if get() is accessible
+bool return_value_handle::is_valid()
+
+// Get the return value from the function. Will throw std::runtime_error if is_valid = false 
+T return_value_handle::get()
+```
+
+
+
+
+
+
 ## `Task` vs `Return_Value` vs `Return_Value_Handle`
 
 Data Flow

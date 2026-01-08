@@ -235,7 +235,7 @@ public:
     void shutdown_now(); // cancel pending tasks
 
     [[nodiscard]]
-    int queue_size() const;
+    int queue_size() ;
 };
 
 // Void specialization
