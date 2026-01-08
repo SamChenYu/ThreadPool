@@ -47,7 +47,7 @@ struct return_value {
         if (!is_valid_unsafe()) { // unsafe to prevent deadlock as we already acquired mutex
             throw std::runtime_error{"Thread Return Value is Invalid!"};
         }
-
+        m_IsValid = false;
         return m_Value;
     }
 
@@ -63,10 +63,7 @@ private:
     void set_value(const T& value) {
         std::unique_lock<std::mutex> lock(access_mutex);
         m_Value = value;
-    }
-    void set_valid(const bool& value) {
-        std::unique_lock<std::mutex> lock(access_mutex);
-        m_IsValid = value;
+        m_IsValid = true;
     }
 };
 
@@ -108,11 +105,8 @@ private:
 
     void set_value() {
         std::unique_lock<std::mutex> lock(access_mutex);
+        m_IsValid = false; // Never true with <void>
         // Do nothing
-    }
-    void set_valid(const bool& value) {
-        std::unique_lock<std::mutex> lock(access_mutex);
-        m_IsValid = value;
     }
 };
 
@@ -232,7 +226,6 @@ public:
         write_task(
             [ptr, rv_handle] () mutable {
                     rv_handle.set_value(ptr());
-                    rv_handle.set_valid(true);
                 }
             );
         return rv_handle;

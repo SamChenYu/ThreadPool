@@ -25,7 +25,7 @@ threadpool wraps the function pointer:
 }
 ```
 This way we are able to capture the return value to the client. 
-The threads simply invoke the task. 
+The threads simply invoke the task. (This is simplified, we acquire mutexes to prevent race conditions)
 
 
 
