@@ -18,26 +18,22 @@ int main() {
 
     //all_tests();
 
-    threadpool tp(3);
+    threadpool tp(1);
 
     std::vector<return_value_handle<int>> futures = {
         tp.submit<int>( []() -> int { return recursive_fibonacci(10);} ),
         tp.submit<int>( []() -> int { return recursive_fibonacci(20);} ),
         tp.submit<int>( []() -> int { return recursive_fibonacci(30);} ),
-        tp.submit<int>( []() -> int { return recursive_fibonacci(40);} ),
     };
-
-    //std::this_thread::sleep_for(std::chrono::seconds(2));
-
 
     tp.shutdown();
 
     for (int i=0; i<futures.size(); i++) {
         const auto& f = futures[i];
         if (f.is_valid()) {
-            std::cout << "Result " << i << " " << f.get() << std::endl;
+            std::cout << "Result " << i << " " << f.get() << std::endl << std::flush;
         } else {
-            std::cout << "Result " << i << " not available" << std::endl;
+            std::cout << "Result " << i << " not available" << std::endl << std::flush;
         }
     }
 

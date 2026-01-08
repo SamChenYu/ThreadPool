@@ -1,54 +1,30 @@
 #include "threadpool.h"
 
-#include <iostream>
-
-
 // ============ THREADPOOL PUBLIC ============
 
 threadpool::threadpool(const int& n) {
     workers.reserve(n);
     for (int i=0; i<n; i++) {
-        workers[i] = std::thread([this, i]() {
+        workers.emplace_back([this, i]() {
 
             while (true) {
                 std::unique_lock<std::mutex> lock(queue_stop_mutex);
 
                 if (this->tasks.empty() && !(this->m_Stop)) {
-                    std::cout << i << " Sleeping " << this->tasks.size() << std::endl;
-
                     this->cv.wait(lock, [this]() { return  ( !this->tasks.empty() || this->m_Stop ); });
-
                 }
 
-                std::cout << i << " Woken up " << this->tasks.size() << std::endl;
-                if (this->tasks.empty() && (this->m_Stop) ) {
-
-                    std::cout << i <<" Exiting " << this->tasks.size()  << std::endl;
+                if (this->tasks.empty() && this->m_Stop ) {
                     lock.unlock();
                     break;
                 }
-                std::cout << i <<" Checking " << this->tasks.size() << std::endl;
                 std::optional<task> opt_task = this->poll_task();
                 if (opt_task.has_value()) {
-                    std::cout << i <<" Doing work " << this->tasks.size()  << std::endl;
                     auto& task = opt_task.value();
                     lock.unlock();
                     task.m_Ptr();
                 }
-                std::cout << i << " Looping " << this->tasks.size() << std::endl;
             }
-
-            // while (!(this->m_Stop)) {
-            //
-            //     std::optional<task> opt_task = this->poll_task();
-            //     if (opt_task.has_value()) {
-            //         auto& task = opt_task.value();
-            //         task.m_Ptr();
-            //     }
-            // }
-
-
-
 
         });
     }
@@ -64,10 +40,9 @@ threadpool::~threadpool() {
 
 void threadpool::shutdown() {
     std::unique_lock<std::mutex> lock(queue_stop_mutex);
-    std::cout << "Shutdown called " <<  std::endl;
     m_Stop = true;
-    lock.unlock();
     cv.notify_all();
+    lock.unlock();
     for (std::thread& worker : workers) {
         worker.join();
     }
