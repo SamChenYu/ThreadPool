@@ -5,7 +5,7 @@
 threadpool::threadpool(const int& n) {
     workers.reserve(n);
     for (int i=0; i<n; i++) {
-        workers.emplace_back([this, i]() {
+        workers.emplace_back([this]() {
 
             while (true) {
                 std::unique_lock<std::mutex> lock(queue_stop_mutex);
@@ -22,7 +22,7 @@ threadpool::threadpool(const int& n) {
                 if (opt_task.has_value()) {
                     auto& task = opt_task.value();
                     lock.unlock();
-                    task.m_Ptr();
+                    task();
                 }
             }
 
@@ -49,11 +49,13 @@ void threadpool::shutdown() {
 }
 
 void threadpool::shutdown_now() {
-    std::lock_guard<std::mutex> lock(queue_stop_mutex);
+    std::unique_lock<std::mutex> lock(queue_stop_mutex);
     m_Stop = true;
     while (!tasks.empty()) {
         tasks.pop(); // Clear the queue
     }
+    cv.notify_all();
+    lock.unlock();
     for (std::thread& worker : workers) {
         worker.join();
     }

@@ -14,9 +14,7 @@ int recursive_fibonacci(int n) {
     return recursive_fibonacci(n - 1) + recursive_fibonacci(n - 2);
 }
 
-int main() {
-
-    //all_tests();
+void fibonacci_example() {
 
     threadpool tp(1);
 
@@ -36,6 +34,13 @@ int main() {
             std::cout << "Result " << i << " not available" << std::endl << std::flush;
         }
     }
+}
+
+
+int main() {
+
+    all_tests();
+    //fibonacci_example();
 
     return 0;
 }

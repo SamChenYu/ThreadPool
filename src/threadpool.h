@@ -18,7 +18,7 @@ struct task {
     void operator()() const {
         m_Ptr();
     }
-
+private:
     std::function<void()> m_Ptr;
 };
 
