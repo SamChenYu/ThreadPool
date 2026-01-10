@@ -59,5 +59,38 @@ inline void threadpool_tests() {
 
         }
     }
+
+    // Destructor stress tests
+    {
+        for (int i = 0; i < 10'000; ++i) {
+            threadpool tp{4};
+            auto rv = tp.submit<void>([]{});
+        }
+    }
+
+    // Nested submission
+    /*
+        The invariant here is a little more subtle
+        What happens here is the task has a sub-task to put another task onto the threadpool queue
+        However, what most of the time happens is that shutdown() in the main thread gets called before the task gets processed
+        Which means that the queue no longer accepts any tasks, and therefore would throw the runtime_error exception
+        This invariant is kept here - for the DAG aware pools, there would be a private internal enqueing function that would bypass this check
+    */
+    {
+        threadpool tp{1};
+        auto rv1 = tp.submit<void>([&]{
+
+            try {
+                auto rv2 = tp.submit<void>([](){ /* work */ });
+                assert(false);
+            } catch (std::runtime_error) {
+
+            }
+        });
+        tp.shutdown();
+    }
+
+
+
     std::cout << "threadpool tests passed!" << std::endl;
 }

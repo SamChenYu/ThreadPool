@@ -36,12 +36,21 @@ void fibonacci_example() {
     }
 }
 
+struct data{};
+
+void dependency_dag_example() {
+
+}
+
+
+
 
 
 
 
 int main() {
 
+    //all_tests();
     fibonacci_example();
 
     return 0;

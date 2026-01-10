@@ -7,8 +7,23 @@
 #include <mutex>
 #include <condition_variable>
 
+
+
+
 template<class T>
 struct return_value_handle;
+
+
+
+// Todo: add id to the handles
+template<class T>
+inline int depends_on(const return_value_handle<T>& rv_handle) {
+    return 5;
+}
+
+
+
+
 
 // Wrapper for the function pointers
 struct task {
@@ -230,6 +245,14 @@ public:
             );
         return rv_handle;
     }
+
+    template<class T>
+    [[nodiscard]]
+    return_value_handle<T> submit(const std::function<T()>& ptr, int dependency_id) {
+        return_value_handle<T> rv_handle{};
+        return rv_handle;
+    }
+
 
     void shutdown();   // finish queued tasks
     void shutdown_now(); // cancel pending tasks
