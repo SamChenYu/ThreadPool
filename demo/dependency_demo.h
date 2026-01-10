@@ -35,6 +35,11 @@ inline data merge_data(data a, data b) {
     return data{};
 }
 
+inline data run_analysis(data d) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    return data{};
+}
+
 
 inline void dependency_dag_example() {
     threadpool tp(2);

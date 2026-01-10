@@ -7,8 +7,11 @@
 #include <mutex>
 #include <condition_variable>
 
+// Forward Declarations
 template<class T>
 struct return_value_handle;
+class threadpool;
+
 
 // Wrapper for the function pointers
 struct task {
@@ -137,6 +140,15 @@ public:
         return m_Handle.get()->get();
     }
 
+    // Dependency DAG APIs
+    template<typename... Args>
+    return_value_handle<T> then(threadpool& tp, Args... args) {
+        // Todo: actually implement the logic
+        return_value_handle<T> rv{};
+
+        return rv;
+    }
+
 private:
     std::shared_ptr<return_value<T>> m_Handle;
     void set_value(const T& value) {
@@ -172,6 +184,15 @@ public:
 
     void get() const {
         return m_Handle.get() -> get();
+    }
+
+    // Dependency DAG APIs
+    template<typename... Args>
+    return_value_handle<void> then(threadpool& tp, Args... args) {
+        // Todo: actually implement the logic
+        return_value_handle<void> rv{};
+
+        return rv;
     }
 
 private:
@@ -243,7 +264,17 @@ public:
     void shutdown_now(); // cancel pending tasks
 
     [[nodiscard]]
-    int queue_size() ;
+    int queue_size();
+
+    // Dependency DAG API
+    template<typename... Args>
+    return_value_handle<void> when_all(Args... args) {
+        // Todo: actually implement the logic
+        return_value_handle<void> rv{};
+        return rv;
+    }
+
+
 };
 
 // Void specialization
