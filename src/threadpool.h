@@ -7,23 +7,8 @@
 #include <mutex>
 #include <condition_variable>
 
-
-
-
 template<class T>
 struct return_value_handle;
-
-
-
-// Todo: add id to the handles
-template<class T>
-inline int depends_on(const return_value_handle<T>& rv_handle) {
-    return 5;
-}
-
-
-
-
 
 // Wrapper for the function pointers
 struct task {
