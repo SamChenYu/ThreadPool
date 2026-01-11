@@ -8,6 +8,8 @@
 #include <chrono>
 #include <thread>
 
+// Demo showing threadpool usage with task dependencies
+
 struct data{};
 
 inline data fetch_api_a() {
@@ -45,6 +47,9 @@ inline void dependency_dag_example() {
     threadpool tp(2);
 
     // Simulated ETL pipeline
+    // Fetch → Clean → Merge → Analysis
+
+
     auto api_a = tp.submit<data>([] { return fetch_api_a(); });
     auto api_b = tp.submit<data>([] { return fetch_api_b(); });
 
@@ -64,5 +69,7 @@ inline void dependency_dag_example() {
     auto analysis = merge.then(tp, [](data m) {
         return run_analysis(m);
     });
+
+    tp.shutdown();
 
 }

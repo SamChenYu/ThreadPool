@@ -34,6 +34,13 @@ T return_value_handle::get()
 
 
 
+
+
+
+
+
+
+
 ## `Task` vs `Return_Value` vs `Return_Value_Handle`
 
 Data Flow
@@ -124,6 +131,67 @@ Function shutdown_now()
 
 
 
+## DAG Dependency APIs
+
+### Conceptual Models - singular dependency
+```c++
+auto api_a = tp.submit<data>([] { return fetch_api_a(); });
+
+auto clean_a = api_a.then(tp, [](data d) {
+    return clean_api_a(d);
+});
+```
+return_value_handle contains then():
+- return_value needs to add a vector<std::function<T()> to store callback functions
+- Once the return_value has been validated, it enqueues the next task onto the corresponding threadpool
+``` psuedocode
+then(tp, f):
+    if state.ready:
+        enqueue f(state.value) onto tp
+    else:
+        state.continuations.push_back({tp, f})
+```
+
+### Conceptual Models - multiple dependency
+``` c++
+auto merge = tp.when_all(clean_a, clean_b)
+               .then(tp, [](data a, data b) {
+                   return merge_data(a, b);
+               });
+```
+return_value_handle contains .when_all()
+- register a function callback into clean_a and clean_b 
+- on completion, check if merge can fire 
+- say clean_a fires first, clean_b still not done, do nothing 
+- clean_b fires second, then merge's task can be enqueued
+
+note: error propagation - my decision for any errors is to cancel the entire task completely
 
 
 
+## Continuation 
+Hybrid design
+- A thread pool that executes tasks
+- A task graph builder that:
+  - collects nodes
+  - collects dependencies
+  - validates acyclicity
+  - topo-sorts
+
+Then submits runnable nodes to the pool
+
+```c++
+task_graph g;
+
+auto a = g.add(fetch);
+auto b = g.add(clean).after(a);
+auto c = g.add(merge).after(a, b);
+
+g.execute(tp);
+```
+
+Internally:
+topo sort once
+decrement dependency counters
+enqueue ready tasks
+on completion, unlock children

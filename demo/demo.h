@@ -4,6 +4,8 @@
 #include <iostream>
 #include "../src/threadpool.h"
 
+// Simple demo usage of threadpool
+
 inline int recursive_fibonacci(int n) {
     if (n <= 1){
         return n;

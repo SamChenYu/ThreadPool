@@ -11,6 +11,6 @@ add_executable(ThreadPool demo/main.cpp
         tests/task_tests.h
         tests/threadpool_tests.h
         demo/dependency_demo.h
-        demo/dependency_demo.h
         demo/demo.h
+        demo/multiple_threadpool_demo.h
 )
