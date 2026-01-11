@@ -1,5 +1,22 @@
 # C++ Thread Pool
 
+## Example Usage (Multiple ThreadPool Task Dependencies)
+``` c++
+threadpool io_pool(3); // IO tasks will be blocking
+threadpool cpu_pool(2);
+
+auto read_rv = io_pool.submit<IO_Data>( []() { return read(); });
+
+auto parse_rv = read_rv.then( cpu_pool, [](IO_Data data) { return parse(data); });
+
+auto compress_rv = parse_rv.then(cpu_pool, [](IO_Data data) { return compress(data); });
+
+auto upload_rv = compress_rv.then(cpu_pool, [](IO_Data data) { return upload(data); });
+
+io_pool.shutdown();
+cpu_pool.shutdown();
+```
+
 ## Example Usage (Dependency Jobs)
 ```c++
 threadpool tp(2);
