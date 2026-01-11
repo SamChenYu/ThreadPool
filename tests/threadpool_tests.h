@@ -4,6 +4,7 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <cassert>
 
 inline void threadpool_tests() {
 

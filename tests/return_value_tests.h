@@ -2,6 +2,7 @@
 
 #include "../src/threadpool.h"
 #include <iostream>
+#include <cassert>
 
 inline void return_value_tests() {
 
