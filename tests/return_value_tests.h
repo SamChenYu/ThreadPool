@@ -38,5 +38,5 @@ inline void return_value_tests() {
         assert(!rv_handle2.is_valid());
     }
 
-    std::cout << "return_value & return_value_handle tests passed!" << std::endl;
+    std::cout << "return_value & return_value_handle tests passed!\n";
 }

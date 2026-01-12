@@ -18,5 +18,5 @@ inline void task_tests() {
         assert(num == 5);
     }
 
-    std::cout << "task test passed!" << std::endl;
+    std::cout << "task test passed! \n";
 }
