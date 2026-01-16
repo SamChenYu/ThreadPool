@@ -53,22 +53,22 @@ inline void dependency_dag_example() {
     auto api_a = tp.submit<data>([] { return fetch_api_a(); });
     auto api_b = tp.submit<data>([] { return fetch_api_b(); });
 
-    auto clean_a = api_a.then(tp, [](data d) {
-        return clean_api_a(d);
-    });
-
-    auto clean_b = api_b.then(tp, [](data d) {
-        return clean_api_b(d);
-    });
-
-    auto merge = tp.when_all(clean_a, clean_b)
-                   .then(tp, [](data a, data b) {
-                       return merge_data(a, b);
-                   });
-
-    auto analysis = merge.then(tp, [](data m) {
-        return run_analysis(m);
-    });
+    // auto clean_a = api_a.then(tp, [](data d) {
+    //     return clean_api_a(d);
+    // });
+    //
+    // auto clean_b = api_b.then(tp, [](data d) {
+    //     return clean_api_b(d);
+    // });
+    //
+    // auto merge = tp.when_all(clean_a, clean_b)
+    //                .then(tp, [](data a, data b) {
+    //                    return merge_data(a, b);
+    //                });
+    //
+    // auto analysis = merge.then(tp, [](data m) {
+    //     return run_analysis(m);
+    // });
 
     tp.shutdown();
 

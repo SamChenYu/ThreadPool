@@ -37,13 +37,13 @@ inline void multiple_threadpool_example() {
     threadpool io_pool(5); // IO tasks will be blocking
     threadpool cpu_pool(2); //
 
-    auto read_rv = io_pool.submit<IO_Data>( []() { return read(); });
-
-    auto parse_rv = read_rv.then( cpu_pool, [](IO_Data data) { return parse(data); });
-
-    auto compress_rv = parse_rv.then(cpu_pool, [](IO_Data data) { return compress(data); });
-
-    auto upload_rv = compress_rv.then(cpu_pool, [](IO_Data data) { return upload(data); });
+    // auto read_rv = io_pool.submit<IO_Data>( []() { return read(); });
+    //
+    // auto parse_rv = read_rv.then<IO_Data>( cpu_pool, []() { return parse(data); });
+    //
+    // auto compress_rv = parse_rv.then<IO_Data>(cpu_pool, []() { return compress(data); });
+    //
+    // auto upload_rv = compress_rv.then<IO_Data>(io_pool, []() { return upload(data); });
 
     io_pool.shutdown();
     cpu_pool.shutdown();
