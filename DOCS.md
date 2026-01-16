@@ -56,7 +56,7 @@ Once thread is done, rv_handle.is_valid() = true
 Client can obtain return value with rv_handle.get()
 ```
 ### Return_Value_Handle?
-The return_value state is passed both to the client and the task, and therefore requires the handle to hold a shared_pointer. 
+The return_value state is passed both to the client and the task, and therefore requires the handle to hold a shared_pointer.
 
 ### Task wraps a `function<void()>`, but the client submits a `function<T()>`?
 threadpool wraps the function pointer:
@@ -66,7 +66,7 @@ threadpool wraps the function pointer:
     rv_handle.valid = true;
 }
 ```
-This way we are able to capture the return value to the client. 
+This way we are able to capture the return value to the client.
 The threads simply invoke the task. (This is simplified, we acquire mutexes to prevent race conditions)
 
 
@@ -142,7 +142,10 @@ auto clean_a = api_a.then(tp, [](data d) {
 });
 ```
 return_value_handle contains then():
+- forward this to return_value's private API, we need to return a new return_value_handle, make this shared too.
+- However, the dependent and new task might not have the same data types, so we have to edit the API to include template<class S> too.
 - return_value needs to add a vector<std::function<T()> to store callback functions
+# OK PSA, I AM GOING WITH STD::FUNCTION INSTEAD OF VARIADIC TEMPLATING TO GET THE CORRECT ARCHITECTURE AND DATA FLOWS UP FIRST
 - Once the return_value has been validated, it enqueues the next task onto the corresponding threadpool
 ``` psuedocode
 then(tp, f):
@@ -160,16 +163,23 @@ auto merge = tp.when_all(clean_a, clean_b)
                });
 ```
 return_value_handle contains .when_all()
-- register a function callback into clean_a and clean_b 
-- on completion, check if merge can fire 
-- say clean_a fires first, clean_b still not done, do nothing 
+- register a function callback into clean_a and clean_b
+- on completion, check if merge can fire
+- say clean_a fires first, clean_b still not done, do nothing
 - clean_b fires second, then merge's task can be enqueued
 
 note: error propagation - my decision for any errors is to cancel the entire task completely
 
 
 
-## Continuation 
+
+
+
+
+
+
+
+## Continuation
 Hybrid design
 - A thread pool that executes tasks
 - A task graph builder that:

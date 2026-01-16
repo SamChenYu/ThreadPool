@@ -67,7 +67,26 @@ private:
         std::unique_lock<std::mutex> lock(access_mutex);
         m_Value = value;
         m_IsValid = true;
+        // Todo: Forward callbacks to their pools
     }
+
+
+    std::vector<std::function<void()>> callbacks;
+    // Dependency DAG APIs
+    template<class S>
+    return_value_handle<S> then(threadpool& tp, std::function<S()>& f) {
+        return_value_handle<S> rv_handle{};
+        // Forward to tp
+        callbacks.emplace_back(
+            [tp, f, rv_handle]() {
+                tp.submit_internal<S>(f, rv_handle);
+            }
+        );
+        return rv_handle;
+    }
+
+
+
 };
 
 // Specialization of void
@@ -97,6 +116,8 @@ struct return_value<void> {
         }
         // nothing to return
     }
+
+    //Todo: specizalition of then()
 
 private:
     std::mutex access_mutex;
@@ -141,12 +162,9 @@ public:
     }
 
     // Dependency DAG APIs
-    template<typename... Args>
-    return_value_handle<T> then(threadpool& tp, Args... args) {
-        // Todo: actually implement the logic
-        return_value_handle<T> rv{};
-
-        return rv;
+    template<class S>
+    return_value_handle<T> then(threadpool& tp, std::function<S()>& f) {
+        return m_Handle->then(tp, f);
     }
 
 private:
@@ -186,14 +204,7 @@ public:
         return m_Handle.get() -> get();
     }
 
-    // Dependency DAG APIs
-    template<typename... Args>
-    return_value_handle<void> then(threadpool& tp, Args... args) {
-        // Todo: actually implement the logic
-        return_value_handle<void> rv{};
-
-        return rv;
-    }
+    // Todo: specialization of then()
 
 private:
     std::shared_ptr<return_value<void>> m_Handle;
@@ -213,6 +224,9 @@ private:
 
 
 class threadpool {
+
+    template<typename> friend struct return_value; // Give access to submit_internal
+
 private:
     std::queue<task> tasks;
     std::vector<std::thread> workers;
@@ -227,6 +241,17 @@ private:
         // No lock guard as submit() already contains the lock
         tasks.push( task{ptr} );
         cv.notify_one();
+    }
+
+    template<class S>
+    void submit_internal(std::function<S()>& ptr, return_value_handle<S> rv_handle) {
+        std::unique_lock<std::mutex> lock(queue_stop_mutex);
+
+        write_task(
+            [ptr, rv_handle] () mutable {
+                    rv_handle.set_value(ptr());
+                }
+            );
     }
 
 public:
@@ -295,4 +320,15 @@ inline return_value_handle<void> threadpool::submit(const std::function<void()>&
             }
         );
     return rv_handle;
+}
+
+template<>
+void threadpool::submit_internal(std::function<void()>& ptr, return_value_handle<void> rv_handle) {
+    std::unique_lock<std::mutex> lock(queue_stop_mutex);
+
+    write_task(
+        [ptr, rv_handle] () mutable {
+                ptr();
+            }
+        );
 }
