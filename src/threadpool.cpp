@@ -78,5 +78,3 @@ std::optional<task> threadpool::poll_task() {
     tasks.pop();
     return front;
 }
-
-

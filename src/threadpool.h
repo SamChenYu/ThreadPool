@@ -7,6 +7,10 @@
 #include <mutex>
 #include <condition_variable>
 
+
+//Todo: remove this
+#include<iostream>
+
 // Forward Declarations
 template<class T> struct return_value;
 template<class T> struct return_value_handle;
@@ -41,6 +45,7 @@ private:
     std::condition_variable cv;
 
     std::optional<task> poll_task();
+
     void write_task(const std::function<void()>& ptr) {
         // No lock guard as submit() already contains the lock
         tasks.emplace(ptr);
@@ -136,7 +141,7 @@ struct return_value {
 
 private:
     std::mutex access_mutex;
-    T m_Value;
+    T m_Value{};
     bool m_IsValid{false};
 
     [[nodiscard]]
@@ -148,8 +153,11 @@ private:
         std::unique_lock<std::mutex> lock(access_mutex);
         m_Value = value;
         m_IsValid = true;
+        std::cout << "set_value called \n";
         for (const auto& f: callbacks) {
             f();
+            std::string output{"Thread has placed a function callback\n"};
+            std::cout << output;
         }
         //Todo: test
     }
@@ -220,6 +228,7 @@ private:
     template<class S>
     return_value_handle<S> then(threadpool& tp,std::function<S()> f) {
         return_value_handle<S> rv_handle{};
+        std::cout << "callback emplaced\n";
         callbacks.emplace_back(
             [&tp, f, rv_handle]() {
                 tp.submit_internal(f, rv_handle);
@@ -253,12 +262,21 @@ public:
     T get() const {
         return m_Handle.get()->get();
     }
-    // Dependency DAG APIs
+    // Dependency based task, but unrelated parameters
     template<class S>
     return_value_handle<S> then(threadpool& tp, std::function<S()> f) {
         return m_Handle->then(tp, f);
         //Todo: test this
     }
+
+    // Dependency based task, assumed previous task feeds into current task
+    template<class S, class... Args>
+    return_value_handle<S> then(threadpool& tp, std::function<S(Args...)> f) {
+        //return m_Handle->then(tp, f);
+        //Todo: fix the call
+        return return_value_handle<S>{};
+    }
+
 private:
     std::shared_ptr<return_value<T>> m_Handle;
     void set_value(const T& value) {
@@ -300,6 +318,13 @@ public:
     return_value_handle<S> then(threadpool& tp, std::function<S()> f) {
         return m_Handle->then(tp, f);
         //Todo: test this
+    }
+
+    // Dependency based task, assumed previous task feeds into current task
+    template<class... Args>
+    return_value_handle<void> then(threadpool& tp, std::function<void(Args...)> f) {
+        //Todo: fix the call
+        return m_Handle->then(tp, f);
     }
 
 private:

@@ -6,7 +6,7 @@
 int main() {
 
     all_tests();
-    // fibonacci_example();
+    fibonacci_example();
     // dependency_dag_example();
     // multiple_threadpool_example();
 
