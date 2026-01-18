@@ -98,10 +98,11 @@ inline void threadpool_tests() {
         auto rv1 = tp.submit<void>([]{ std::this_thread::sleep_for(std::chrono::milliseconds(50));});
         auto rv2 = tp.submit<void>( []() { });
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(10)); // Wait for thread to pick up the task
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // Wait for thread to pick up the task
         tp.shutdown_now();
 
         // Not sure exactly why, but this fails
+        int i;
         //assert(rv1.is_valid());
         assert(!rv2.is_valid());
     }

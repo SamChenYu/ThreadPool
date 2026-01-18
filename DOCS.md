@@ -128,11 +128,22 @@ Function shutdown_now()
 ```
 
 
+# Variadic Templating
+```c++
+template<typename F, typename... Values>
+auto submit(F&& f, Values&&... values) {
+    return f(std::forward<Values>(values)...);
+}
+
+  int result1 = submit([](int x, int y){ return x + y; }, 2, 3);    
+```
+
+
 
 
 
 ## DAG Dependency APIs
-
+- Important points: The threadpool needs to own the tasks, even ones with dependencies (Allow cross-threadpool dependencies(?))
 ### Conceptual Models - singular dependency
 ```c++
 auto api_a = tp.submit<data>([] { return fetch_api_a(); });
@@ -140,13 +151,20 @@ auto api_a = tp.submit<data>([] { return fetch_api_a(); });
 auto clean_a = api_a.then(tp, [](data d) {
     return clean_api_a(d);
 });
+
+
+
 ```
-return_value_handle contains then():
-- forward this to return_value's private API, we need to return a new return_value_handle, make this shared too.
-- However, the dependent and new task might not have the same data types, so we have to edit the API to include template<class S> too.
-- return_value needs to add a vector<std::function<T()> to store callback functions
+
+
+
+
+
+
+
+
+
 # OK PSA, I AM GOING WITH STD::FUNCTION INSTEAD OF VARIADIC TEMPLATING TO GET THE CORRECT ARCHITECTURE AND DATA FLOWS UP FIRST
-- Once the return_value has been validated, it enqueues the next task onto the corresponding threadpool
 ``` psuedocode
 then(tp, f):
     if state.ready:

@@ -4,7 +4,6 @@
 #include "multiple_threadpool_demo.h"
 
 int main() {
-
     all_tests();
     fibonacci_example();
     // dependency_dag_example();
