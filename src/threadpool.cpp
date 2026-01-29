@@ -18,9 +18,10 @@ threadpool::threadpool(const int& n) {
                     lock.unlock();
                     break;
                 }
-                std::optional<task> opt_task = this->poll_task();
-                if (opt_task.has_value()) {
-                    auto& task = opt_task.value();
+
+                if (!tasks.empty()) {
+                    auto task = std::move(tasks.front());
+                    tasks.pop();
                     lock.unlock();
                     task();
                 }
@@ -29,6 +30,9 @@ threadpool::threadpool(const int& n) {
         });
     }
 }
+
+
+
 
 threadpool::~threadpool() {
     std::unique_lock<std::mutex> lock(queue_stop_mutex);
@@ -62,19 +66,7 @@ void threadpool::shutdown_now() {
 }
 
 [[nodiscard]]
-int threadpool::queue_size() {
+size_t threadpool::queue_size() {
     std::lock_guard<std::mutex> lock(queue_stop_mutex);
     return tasks.size();
-}
-
-// ============ THREADPOOL PRIVATE ============
-
-std::optional<task> threadpool::poll_task() {
-    // No lock guard as the thread would already have the guard
-    if (tasks.empty()) {
-        return std::nullopt;
-    }
-    task front = tasks.front();
-    tasks.pop();
-    return front;
 }
