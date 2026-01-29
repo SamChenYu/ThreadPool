@@ -1,7 +1,5 @@
 #include "threadpool.h"
 
-// ============ THREADPOOL PUBLIC ============
-
 threadpool::threadpool(const int& n) {
     workers.reserve(n);
     for (int i=0; i<n; i++) {
@@ -31,6 +29,12 @@ threadpool::threadpool(const int& n) {
     }
 }
 
+
+void threadpool::write_task(const std::function<void()>& fn) {
+    // Does not need the lock as submit already acquires it
+    tasks.push(fn);
+    cv.notify_one();
+}
 
 
 

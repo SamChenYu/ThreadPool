@@ -18,16 +18,11 @@ private:
     std::mutex queue_stop_mutex; // Used for queue operations and read/write m_Stop operations
     std::condition_variable cv;
 
-    void write_task(const std::function<void()>& fn) {
-        // Does not need the lock as submit already acquires it
-        tasks.push(fn);
-        cv.notify_one();
-    }
+    void write_task(const std::function<void()>& fn);
 
 public:
     explicit threadpool(const int& threads);
     ~threadpool();
-
 
     template<typename Function, typename... Args>
     [[nodiscard]]
@@ -37,7 +32,6 @@ public:
         if (m_Stop) {
             throw std::runtime_error{"ThreadPool::submit() after shutdown called"};
         }
-
 
         using ReturnType = std::invoke_result_t<Function, Args...>;
 
@@ -50,23 +44,8 @@ public:
 
         write_task([task](){ (*task)(); });
 
-        return future; // Return type is future<ReturnType>
+        return future;
     }
-
-    // template<std::invocable Fn>
-    // [[nodiscard]]
-    // auto submit(const Fn&& fn) {
-    //     using return_type = std::invoke_result_t<Fn>;
-    //
-    //     std::unique_lock lock(queue_stop_mutex);
-    //     if (m_Stop) {
-    //         throw std::runtime_error{"ThreadPool::submit() after shutdown called"};
-    //     }
-    //
-    //     std::packaged_task<return_type> task{fn};
-    //     write_task([&task]() { task(); });
-    //     return task.get_future();
-    // }
 
 
     void shutdown();   // finish queued tasks
@@ -74,14 +53,4 @@ public:
 
     [[nodiscard]]
     size_t queue_size();
-
-    // Dependency DAG API
-    // template<typename... Args>
-    // return_value_handle<void> when_all(Args... args) {
-    //     // Todo: actually implement the logic
-    //     return_value_handle<void> rv{};
-    //     return rv;
-    // }
-
-
 };

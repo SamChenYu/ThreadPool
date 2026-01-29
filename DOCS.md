@@ -8,7 +8,7 @@ threadpool
 threadpool::threadpool(const int& threads);
 
 // Adding a task to the queue. Returns a handle to give return value of the function pointer.
-return_value_handle<T> threadpool::submit(const std::function<T()>& ptr);
+std::future<T> threadpool::submit(const std::function<T()>& ptr);
 
 // Block the queue, join all threads (All pending tasks run).
 void threadpool::shutdown();
@@ -17,63 +17,10 @@ void threadpool::shutdown();
 void threadpool::shutdown_now();
 
 // Number of tasks awaiting in the queue. Does not count tasks in progress. 
-int threadpool::queue_size() const;
+size_t threadpool::queue_size() const;
 ``` 
 
-return_value_handle<T>
-```c++
-// Used to check if the thread has finished work and if get() is accessible
-bool return_value_handle::is_valid()
-
-// Get the return value from the function. Will throw std::runtime_error if is_valid = false 
-T return_value_handle::get()
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-## `Task` vs `Return_Value` vs `Return_Value_Handle`
-
-Data Flow
-```
-Client creates threadpool with n threads
-Client calls submit(function<T()>);
-    threadpool creates a return_value_handle
-    threadpool wraps the function pointer into a task
-    threadpool places the task on the queue
-    threadpool returns the client the return_value_handle
-
-Once thread is done, rv_handle.is_valid() = true
-Client can obtain return value with rv_handle.get()
-```
-### Return_Value_Handle?
-The return_value state is passed both to the client and the task, and therefore requires the handle to hold a shared_pointer.
-
-### Task wraps a `function<void()>`, but the client submits a `function<T()>`?
-threadpool wraps the function pointer:
-``` c++
-[rv_handle, ptr]() { 
-    rv_handle.m_Value = ptr();
-    rv_handle.valid = true;
-}
-```
-This way we are able to capture the return value to the client.
-The threads simply invoke the task. (This is simplified, we acquire mutexes to prevent race conditions)
-
-
-
-
 ## Pool Main Thread vs Worker Thread
-
 Worker Thread Logic
 ```
 WHILE TRUE:
@@ -130,12 +77,29 @@ Function shutdown_now()
 
 # Variadic Templating
 ```c++
-template<typename F, typename... Values>
-auto submit(F&& f, Values&&... values) {
-    return f(std::forward<Values>(values)...);
-}
+template<typename Function, typename... Args>
+[[nodiscard]]
+auto submit(Function &&F, Args &&...ArgList) {
 
-  int result1 = submit([](int x, int y){ return x + y; }, 2, 3);    
+    std::unique_lock<std::mutex> lock(queue_stop_mutex);
+    if (m_Stop) {
+        throw std::runtime_error{"ThreadPool::submit() after shutdown called"};
+    }
+
+
+    using ReturnType = std::invoke_result_t<Function, Args...>;
+
+    std::shared_ptr<std::packaged_task<ReturnType()>> task = std::make_shared<std::packaged_task<ReturnType()>>((
+        std::bind(std::forward<Function>(F),
+                  std::forward<Args>(ArgList)...)
+    ));
+
+    auto future = task->get_future();
+
+    write_task([task](){ (*task)(); });
+
+    return future; // Return type is future<ReturnType>
+}
 ```
 
 
@@ -151,49 +115,7 @@ auto api_a = tp.submit<data>([] { return fetch_api_a(); });
 auto clean_a = api_a.then(tp, [](data d) {
     return clean_api_a(d);
 });
-
-
-
 ```
-
-
-
-
-
-
-
-
-
-# OK PSA, I AM GOING WITH STD::FUNCTION INSTEAD OF VARIADIC TEMPLATING TO GET THE CORRECT ARCHITECTURE AND DATA FLOWS UP FIRST
-``` psuedocode
-then(tp, f):
-    if state.ready:
-        enqueue f(state.value) onto tp
-    else:
-        state.continuations.push_back({tp, f})
-```
-
-### Conceptual Models - multiple dependency
-``` c++
-auto merge = tp.when_all(clean_a, clean_b)
-               .then(tp, [](data a, data b) {
-                   return merge_data(a, b);
-               });
-```
-return_value_handle contains .when_all()
-- register a function callback into clean_a and clean_b
-- on completion, check if merge can fire
-- say clean_a fires first, clean_b still not done, do nothing
-- clean_b fires second, then merge's task can be enqueued
-
-note: error propagation - my decision for any errors is to cancel the entire task completely
-
-
-
-
-
-
-
 
 
 

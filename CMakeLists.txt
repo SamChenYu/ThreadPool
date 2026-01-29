@@ -11,6 +11,6 @@ add_executable(ThreadPool demo/main.cpp
         demo/dependency_demo.h
         demo/demo.h
         demo/multiple_threadpool_demo.h
-        src/task_graph.cpp
-        src/task_graph.h
+        src/taskgraph.cpp
+        src/taskgraph.h
 )
