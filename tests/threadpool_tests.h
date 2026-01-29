@@ -15,6 +15,9 @@ inline int int_test(int input1, int input2) {
     return input1 + input2;
 }
 
+
+
+
 inline void threadpool_tests() {
 
     // Submit syntax
@@ -70,8 +73,6 @@ inline void threadpool_tests() {
         assert(future.get() == 5);
     }
 
-
-
     // Ensure shutdown finishes all remaining tasks
     {
         threadpool tp{1};
@@ -85,6 +86,66 @@ inline void threadpool_tests() {
 
         assert(i == 5);
     }
+
+
+    // Submit after shutdown throws
+    {
+        threadpool tp{1};
+        auto future = tp.submit([]() {return 42;});
+        tp.shutdown();
+
+        try {
+            auto rv = tp.submit([]() {});
+            assert(false);
+        } catch (std::runtime_error) {
+
+        }
+    }
+
+    // Nested submission
+    /*
+        The invariant here is a little more subtle
+        What happens here is the task has a sub-task to put another task onto the threadpool queue
+        However, what most of the time happens is that shutdown() in the main thread gets called before the task gets processed
+        Which means that the queue no longer accepts any tasks, and therefore would throw the runtime_error exception
+        This invariant is kept here - for the DAG aware pools, there would be a private internal enqueing function that would bypass this check
+    */
+    {
+        threadpool tp{1};
+        auto rv1 = tp.submit([&]{
+
+            try {
+                auto rv2 = tp.submit([](){ /* work */ });
+                assert(false);
+            } catch (std::runtime_error) {
+
+            }
+        });
+        tp.shutdown();
+    }
+
+    // get() called after shutdown_now called
+    {
+        threadpool tp{1};
+        auto rv1 = tp.submit([]{ std::this_thread::sleep_for(std::chrono::milliseconds(1000)); return 5; });
+        auto rv2 = tp.submit([]{ std::this_thread::sleep_for(std::chrono::milliseconds(500)); return 55; });
+        auto rv3 = tp.submit( []() { return 55;});
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        tp.shutdown_now();
+
+        assert(rv1.valid() && rv1.get() == 5);
+        try {
+            auto error = rv3.get();
+            assert(false);
+        } catch (const std::future_error& e) {
+
+        }
+
+    }
+
+
+
 
     std::cout << "threadpool tests passed!\n";
 }

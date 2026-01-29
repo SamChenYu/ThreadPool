@@ -19,7 +19,7 @@ private:
     std::condition_variable cv;
 
     void write_task(const std::function<void()>& fn) {
-        // No lock guard as submit() already contains the lock
+        // Does not need the lock as submit already acquires it
         tasks.push(fn);
         cv.notify_one();
     }
@@ -30,8 +30,14 @@ public:
 
 
     template<typename Function, typename... Args>
-
+    [[nodiscard]]
     auto submit(Function &&F, Args &&...ArgList) {
+
+        std::unique_lock<std::mutex> lock(queue_stop_mutex);
+        if (m_Stop) {
+            throw std::runtime_error{"ThreadPool::submit() after shutdown called"};
+        }
+
 
         using ReturnType = std::invoke_result_t<Function, Args...>;
 
@@ -42,8 +48,7 @@ public:
 
         auto future = task->get_future();
 
-        write_task([task]() mutable { (*task)(); });
-
+        write_task([task](){ (*task)(); });
 
         return future; // Return type is future<ReturnType>
     }
