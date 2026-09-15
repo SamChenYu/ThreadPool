@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../src/threadpool.h"
+#include "../src/threadpool.hpp"
 
 // For sleeping the threads
 #include <chrono>

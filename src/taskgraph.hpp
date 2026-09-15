@@ -1,6 +1,6 @@
 #pragma once
 
-#include "threadpool.h"
+#include "threadpool.hpp"
 
 // Static scheduler that includes topological sorting
 

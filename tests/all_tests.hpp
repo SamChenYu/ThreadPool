@@ -1,6 +1,6 @@
 #pragma once
 
-#include "threadpool_tests.h"
+#include "threadpool_tests.hpp"
 
 inline void all_tests() {
 

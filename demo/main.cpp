@@ -1,7 +1,7 @@
-#include "../tests/all_tests.h"
-#include "demo.h"
-#include "dependency_demo.h"
-#include "multiple_threadpool_demo.h"
+#include "../tests/all_tests.hpp"
+#include "demo.hpp"
+#include "dependency_demo.hpp"
+#include "multiple_threadpool_demo.hpp"
 
 int main() {
     all_tests();

@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <iostream>
-#include "../src/threadpool.h"
+#include "../src/threadpool.hpp"
 
 // For sleeping the threads
 #include <chrono>
