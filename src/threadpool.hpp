@@ -26,6 +26,11 @@ private:
 
 
 public:
+    threadpool(const threadpool&) = delete;
+    threadpool& operator=(const threadpool&) = delete;
+    threadpool(threadpool&&) = delete;
+    threadpool& operator=(threadpool&&) = delete;
+
     inline explicit threadpool(const int& n) {
         workers.reserve(n);
         for (int i=0; i<n; i++) {
