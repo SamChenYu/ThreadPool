@@ -13,9 +13,7 @@
  *  taskgraph t{2};
  *  future fut1 = taskgraph.enqueue(foo, 1, 2);
  *  future fut2 = taskgraph.enqueue_dependents(foo, fut1);
- *  
- *  auto val1 = fut1.get();
- *  auto val2 = fut2.get();
+ *  t.start(); // topological sort
  *
  *  ok so here's the thing
  *      threadpool workers just take the task and invoke and thats all
@@ -72,11 +70,11 @@
 class taskgraph {
 private:
     struct task_wrapper {
-        explicit task_wrapper(const std::function<void()>& f, std::queue<task_wrapper>& ready_tasks) : m_task(std::move(f)), m_ready_tasks{ready_tasks}, m_dependency_count{0}, m_ready_dependencies{0} {
+        explicit task_wrapper(const std::function<void()>& f, threadpool& tp) : m_task(f), m_tp_ptr{&tp}, m_dependency_count{0}, m_ready_dependencies{0} {
         }
         std::function<void()> m_task;
         std::vector<std::function<void()>> m_callbacks;
-        std::queue<task_wrapper>& m_ready_tasks;
+        threadpool* m_tp_ptr;
 
         const int m_dependency_count;
         int m_ready_dependencies;
@@ -96,31 +94,42 @@ private:
 
         }
         const std::future<T> m_fut;
-        const task_wrapper *m_ptr;
+        const task_wrapper* m_ptr;
     };
 
-    threadpool m_tp;
-    bool m_stop;
-
-    inline auto write_task(const std::function<void()>& fn) {
-        m_tp.submit // this needs to be submitted somehow
-    }
+    threadpool* m_tp;
+    std::vector<std::shared_ptr<taskgraph>> task_registry{};
 
 public:
-    explicit taskgraph(const int& n) : m_tp{n}, m_stop{false} {}
+    explicit taskgraph(const int& n) : m_tp(new threadpool(n)) {
+    }
+
+    inline ~taskgraph() {
+        delete m_tp;
+    }
 
     template<typename Function, typename... Args>
     [[nodiscard]]
-    auto submit(Function &&F, Args  &&...ArgList) {
-        // will need to add mutexes to this in the future
-        if (m_stop) {
-            throw std::runtime_error{"taskgraph::submit() after shutdown called"};
-        }
+    auto enqueue(Function &&F, Args  &&...ArgList) {
 
-        task_wrapper task{}; // wrap the function, then how do you submit it?
+        // wrap the function again into a task_wrapper
+        // add to task_registry
+        // return the future_wrapper
 
-        auto future = m_tp.submit(std::forward<Function>(F), std::forward<Args>(ArgList)...);
-        return future_wrapper{std::move(future), this};
+        return;
     }
 
+    void enqueue_dependents() {
+
+        // same as enqueue, but needs to register the callbacks with the parent dependency
+
+        return;
+    }
+
+    void start() {
+
+        // topological sort
+
+        return;
+    }
 };
