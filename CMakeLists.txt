@@ -17,4 +17,9 @@ add_executable(demos demo/main.cpp
         demo/demo.hpp
         demo/multiple_threadpool_demo.hpp
 )
+
+add_executable(taskgraph demo/taskgraph.cpp)
+
+target_link_libraries(taskgraph PRIVATE threadpool)
+
 target_link_libraries(demos PRIVATE threadpool)
